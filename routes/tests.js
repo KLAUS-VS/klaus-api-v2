@@ -14,7 +14,7 @@ const register = async server => {
     method: 'GET',
     path: '/tests/',
     handler: () => {
-      return { message: 'Hello Klaus' };
+      return Test.aggregate([{ $limit: 20 }]);
     },
   });
   server.route({
