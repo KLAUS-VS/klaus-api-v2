@@ -29,6 +29,7 @@ mongoose.connect(configGet('db.mongo.host'))
 server.app.mongoose = mongoose;
 
 const plugins = [
+  require('inert'),
   require('./routes/tests'),
 ];
 

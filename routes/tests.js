@@ -5,8 +5,9 @@ const baseJoi = require('joi');
 const extension = require('joi-date-extensions');
 const joi = baseJoi.extend(extension);
 const boom = require('boom');
-const readable = require('stream').Readable;
 const uniqueString = require('unique-string');
+const readable = require('stream').Readable;
+const ObjectId = require('mongoose').Types.ObjectId;
 const Test = require('../models/test-model');
 
 const register = async server => {
@@ -15,6 +16,30 @@ const register = async server => {
     path: '/tests/',
     handler: () => {
       return Test.aggregate([{ $limit: 20 }]);
+    },
+  });
+  server.route({
+    method: 'GET',
+    path: '/tests/{_id}',
+    options: {
+      validate: {
+        params: {
+          _id: joi.string().regex(/^[a-f\d]{24}$/i),
+        },
+      },
+    },
+    handler: async (request, h) => {
+      const fileDetails = await Test.aggregate([{
+        $match: { _id: ObjectId(request.params._id) },
+      }]);
+      if (fileDetails.length <= 0) return boom.badRequest('No such file');
+      const fileStream = fs.createReadStream(fileDetails[0].path);
+      return h.response(fileStream)
+        .type('application/pdf')
+        .header('Content-Type', 'application/pdf')
+        .header('Content-Length', fileStream.length)
+        .header('Content-Disposition',
+          `attachment; filename=${fileDetails[0].meta.name}`);
     },
   });
   server.route({
